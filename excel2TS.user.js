@@ -43,7 +43,40 @@ var parser = new DOMParser();
 
 document.addEventListener('DOMContentLoaded', main(), false);
 
+function main(){
+    console.log("main");
+  if(document.getElementsByClassName('btn-toolbar').length == 1){
+    var toolbar = document.getElementsByClassName("btn-toolbar")[0]
+    var button = document.createElement("button");
+    button.appendChild(document.createTextNode("Excel Tickets"));
+    button.setAttribute("class", "btn btn-primary");
+    button.setAttribute("href", "#");
+    button.setAttribute("type", "button");
+    button.setAttribute("data-toggle", "modal");
+    button.setAttribute("data-target", "#excelTickets");
+    button.setAttribute("data-backdrop", "static");
+    toolbar.appendChild(button);
+  }
+
+  createModal();
+
+  button.addEventListener('click', function(e){
+    e.preventDefault();
+    //var sel = document.getElementById('create-body');
+    //if(sel) sel.innerHTML = "";
+  });
+
+  // if Save was clicked then send a post request
+  document.getElementById('create-btn').onclick = function saveVersion() {
+    var customer = document.getElementById('form-select-customer').value;
+    var product = document.getElementById('form-select-product').value;
+    var tickets = readExcel();
+    //createTickets(tickets, customer, product);
+  }
+}
+
 function createModal(){
+    console.log("createModal");
     // create Resolved Versions modal pop up
     var modal = document.createElement("div");
     modal.className = "modal fade";
@@ -118,39 +151,18 @@ function createModal(){
     modalFooter.appendChild(cbtn);
 }
 
-function main(){
-  if(document.getElementsByClassName('btn-toolbar').length == 1){
-    var toolbar = document.getElementsByClassName("btn-toolbar")[0]
-    var button = document.createElement("button");
-    button.appendChild(document.createTextNode("Excel Tickets"));
-    button.setAttribute("class", "btn btn-primary");
-    button.setAttribute("href", "#");
-    button.setAttribute("data-toggle", "modal");
-    button.setAttribute("data-target", "#excelTickets");
-    toolbar.appendChild(button);
-  }
-
-  createModal();
-
-  button.addEventListener('click', function(e){
-    e.preventDefault();
-    //var sel = document.getElementById('create-body');
-    //if(sel) sel.innerHTML = "";
-    //getOptions();
-  });
-}
-
 function populateForm(){
+  console.log("populate form");
   //create customer dropdown
   var modalBody = document.getElementById("create-body");
   var cdropdown = document.createElement("div");
   cdropdown.className = "form-group";
   var clabel = document.createElement("label");
-  clabel.setAttribute("for","form-select");
+  clabel.setAttribute("for","form-select-customer");
   clabel.innerHTML = "Select a Customer";
   var cselect = document.createElement("select");
   cselect.className = "form-control";
-  cselect.setAttribute("id", "form-select");
+  cselect.setAttribute("id", "form-select-customer");
 
   cdropdown.appendChild(clabel);
   cdropdown.appendChild(cselect);
@@ -168,11 +180,11 @@ function populateForm(){
   var pdropdown = document.createElement("div");
   pdropdown.className = "form-group";
   var plabel = document.createElement("label");
-  plabel.setAttribute("for","form-select");
+  plabel.setAttribute("for","form-select-product");
   plabel.innerHTML = "Select a Product";
   var pselect = document.createElement("select");
   pselect.className = "form-control";
-  pselect.setAttribute("id", "form-select");
+  pselect.setAttribute("id", "form-select-product");
 
   pdropdown.appendChild(plabel);
   pdropdown.appendChild(pselect);
@@ -186,23 +198,51 @@ function populateForm(){
     pselect.appendChild(poption);
   }
 
-  //create file selection
-  /*var file = document.createElement("div");
+  var file = document.createElement("div");
   file.className = "form-group";
-  var flabel = document.createElement("label");
-  flabel.setAttribute("for","form-control");
-  flabel.innerHTML = "Select an Excel file";
-  var fselect = document.createElement("input");
-  fselect.setAtribute("type", "file");
-  fselect.setAttribute("class", "form-control-file");
-  fselect.setAttribute("id", "form-control");
 
-  file.appendChild(flabel);
-  file.appendChild(fselect);
-  modalBody.appendChild(file);*/
+  var fbutton = document.createElement("button");
+  fbutton.setAttribute("onClick", "document.getElementById('file-input').click();");
+  fbutton.setAttribute("type", "button");
+  var create = document.createTextNode("Choose Excel File");
+  fbutton.appendChild(create);
+  var finput = document.createElement("input");
+  finput.setAttribute("id", "file-input");
+  finput.setAttribute("type", "file");
+  finput.setAttribute("name", "file");
+  finput.setAttribute("style", "display: none;");
+  finput.setAttribute("onChange", "(function() {"+
+                        "console.log('fileSelect');"+
+                        "var name = document.getElementById('file-input').files[0].name;"+
+                        "document.getElementById('file-text').setAttribute('value', name);})();");
+  finput.setAttribute("accept", ".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel");
+
+  var ftext = document.createElement("input");
+  ftext.setAttribute("type", "text");
+  ftext.setAttribute("id", "file-text");
+  ftext.setAttribute("placeholder", "No file selected");
+  ftext.setAttribute("readonly", "true");
+
+  modalBody.appendChild(finput);
+  modalBody.appendChild(fbutton);
+  modalBody.appendChild(ftext);
+
+  console.log(modalBody);
+}
+
+function fileSelect(){
+    console.log("fileSelect function");
+    console.log(document.getElementById('file-input'));
+    if(document.getElementById('file-input') != null){
+        console.log('fileSelect');
+        var name = document.getElementById('file-input').files[0].name;
+        document.getElementById('file-text').setAttribute("value", name);
+        readExcel();
+    }
 }
 
 function getProducts(){
+  console.log("getProducts");
   var queryURL = url + "Products";
   xhr.open("GET", queryURL, false, orgID, token);
   xhr.send();
@@ -217,6 +257,7 @@ function getProducts(){
 }
 
 function getCustomers(){
+  console.log("get customers");
   var queryURL = url + "Customers";
   xhr.open("GET", queryURL, false, orgID, token);
   xhr.send();
@@ -228,4 +269,32 @@ function getCustomers(){
     id: customerID,
     name: customerName
   };
+}
+
+function readExcel(){
+    console.log("read excel");
+}
+
+function createTickets(tickets, customer, product){
+    console.log("create tickets");
+    // loop through the tickets array and update their versions
+    var len = tickets.length();
+    for(var t=0; t<len; ++t){
+        var data =
+          '<Ticket>' +
+            '<TicketStatusID>55067</TicketStatusID>' +
+            '<CustomerID>' + customer + '</CustomerID>'+
+            '<ProductID>' + product + '</ProductID>'+
+            '<Name>' + tickets[t].name + '</Name>'+
+            '<Estimatedevdays>' + tickets[t].days + '</Estimatedevdays>'+
+            '<DevelopmentPriority>' + tickets[t].priority + '</DevelopmentPriority>'+
+          '</Ticket>';
+    var xmlData = parser.parseFromString(data,"text/xml");
+        var putURL = url + "tickets";
+        xhr.open("POST", putURL, false, orgID, token);
+        xhr.send(xmlData);
+    }
+
+    //force reload so website reflects resolved version change
+    location.reload();
 }
