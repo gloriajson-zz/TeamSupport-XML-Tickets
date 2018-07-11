@@ -61,13 +61,15 @@ function main(){
   createModal();
 
   button.addEventListener('click', function(e){
+    console.log("trying to clear text");
     e.preventDefault();
-    //var sel = document.getElementById('create-body');
-    //if(sel) sel.innerHTML = "";
+    var clear = document.getElementById('file-text').value;
+    console.log(clear);
+    if(clear) document.getElementById('file-text').setAttribute("value", "");
   });
 
   // if Save was clicked then send a post request
-  document.getElementById('create-btn').onclick = function saveVersion() {
+  document.getElementById('create-btn').onclick = function create() {
     var customer = document.getElementById('form-select-customer').value;
     var product = document.getElementById('form-select-product').value;
     var tickets = readExcel();
@@ -153,7 +155,7 @@ function createModal(){
 
 function populateForm(){
   console.log("populate form");
-  //create customer dropdown
+  //create customer dropdown with options from API
   var modalBody = document.getElementById("create-body");
   var cdropdown = document.createElement("div");
   cdropdown.className = "form-group";
@@ -176,7 +178,7 @@ function populateForm(){
     cselect.appendChild(option);
   }
 
-  //create product dropdown
+  //create product dropdown with options from API
   var pdropdown = document.createElement("div");
   pdropdown.className = "form-group";
   var plabel = document.createElement("label");
@@ -198,9 +200,7 @@ function populateForm(){
     pselect.appendChild(poption);
   }
 
-  var file = document.createElement("div");
-  file.className = "form-group";
-
+  // create file upload button and file text bar
   var fbutton = document.createElement("button");
   fbutton.setAttribute("onClick", "document.getElementById('file-input').click();");
   fbutton.setAttribute("type", "button");
@@ -211,11 +211,13 @@ function populateForm(){
   finput.setAttribute("type", "file");
   finput.setAttribute("name", "file");
   finput.setAttribute("style", "display: none;");
-  finput.setAttribute("onChange", "(function() {"+
-                        "console.log('fileSelect');"+
-                        "var name = document.getElementById('file-input').files[0].name;"+
-                        "document.getElementById('file-text').setAttribute('value', name);})();");
   finput.setAttribute("accept", ".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel");
+  finput.onchange = function(){
+      //grab the name of the file
+      console.log(document.getElementById('file-input').files[0]);
+      var name = document.getElementById('file-input').files[0].name;
+      document.getElementById('file-text').setAttribute('value', name);
+  };
 
   var ftext = document.createElement("input");
   ftext.setAttribute("type", "text");
@@ -230,19 +232,8 @@ function populateForm(){
   console.log(modalBody);
 }
 
-function fileSelect(){
-    console.log("fileSelect function");
-    console.log(document.getElementById('file-input'));
-    if(document.getElementById('file-input') != null){
-        console.log('fileSelect');
-        var name = document.getElementById('file-input').files[0].name;
-        document.getElementById('file-text').setAttribute("value", name);
-        readExcel();
-    }
-}
-
 function getProducts(){
-  console.log("getProducts");
+  //get all the products thorugh the API
   var queryURL = url + "Products";
   xhr.open("GET", queryURL, false, orgID, token);
   xhr.send();
@@ -257,6 +248,7 @@ function getProducts(){
 }
 
 function getCustomers(){
+  //get all the customers through the API
   console.log("get customers");
   var queryURL = url + "Customers";
   xhr.open("GET", queryURL, false, orgID, token);
@@ -272,7 +264,19 @@ function getCustomers(){
 }
 
 function readExcel(){
+  // parse through the chosen excel file
     console.log("read excel");
+    var reader = new FileReader();
+    var file = document.getElementById('file-input').files[0];
+
+    reader.addEventListener("load", function () {
+      console.log("LOADING");
+      console.log(reader.result);
+    }, false);
+
+    if(file){
+      reader.readAsDataURL(file);
+    }
 }
 
 function createTickets(tickets, customer, product){
