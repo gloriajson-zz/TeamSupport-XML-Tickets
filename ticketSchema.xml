@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<tickets xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+<ticket>
+  <id>100</id>
+  <priority>1</priority>
+  <title>test</title>
+  <estimatedDays>0.25</estimatedDays>
+</ticket>
+
+<ticket>
+  <id>101</id>
+  <priority>1</priority>
+  <title>test2</title>
+  <estimatedDays>0.50</estimatedDays>
+</ticket>
+
+</tickets>
