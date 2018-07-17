@@ -48,15 +48,16 @@ function main(){
   if(document.getElementsByClassName('btn-toolbar').length == 1){
     var toolbar = document.getElementsByClassName("btn-toolbar")[0]
     var button = document.createElement("button");
-    button.appendChild(document.createTextNode("Excel Tickets"));
+    button.appendChild(document.createTextNode("Mass Tickets"));
     button.setAttribute("class", "btn btn-primary");
     button.setAttribute("href", "#");
     button.setAttribute("type", "button");
     button.setAttribute("data-toggle", "modal");
     button.setAttribute("data-target", "#excelTickets");
-    button.setAttribute("data-backdrop", "static");
+    //button.setAttribute("data-backdrop", "static");
     toolbar.appendChild(button);
   }
+
 
   createModal();
 
@@ -65,15 +66,18 @@ function main(){
     e.preventDefault();
     var clear = document.getElementById('file-text').value;
     console.log(clear);
-    if(clear) document.getElementById('file-text').setAttribute("value", "");
+    if(clear){
+        console.log("resetting text box value");
+        document.getElementById('file-text').setAttribute("value", "");
+        console.log(document.getElementById('file-text').value);
+    }
   });
 
   // if Save was clicked then send a post request
   document.getElementById('create-btn').onclick = function create() {
     var customer = document.getElementById('form-select-customer').value;
     var product = document.getElementById('form-select-product').value;
-    var tickets = readExcel();
-    //createTickets(tickets, customer, product);
+    var tickets = readExcel(customer, product);
   }
 }
 
@@ -204,17 +208,19 @@ function populateForm(){
   var fbutton = document.createElement("button");
   fbutton.setAttribute("onClick", "document.getElementById('file-input').click();");
   fbutton.setAttribute("type", "button");
-  var create = document.createTextNode("Choose Excel File");
+  var create = document.createTextNode("Choose XML File");
   fbutton.appendChild(create);
   var finput = document.createElement("input");
   finput.setAttribute("id", "file-input");
   finput.setAttribute("type", "file");
   finput.setAttribute("name", "file");
   finput.setAttribute("style", "display: none;");
-  finput.setAttribute("accept", ".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel");
+  finput.setAttribute("accept", "text/xml");
+    //.csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel
   finput.onchange = function(){
       //grab the name of the file
-      console.log(document.getElementById('file-input').files[0]);
+      console.log("grabbing file result");
+      console.log(document.getElementById('file-input').files[0].name);
       var name = document.getElementById('file-input').files[0].name;
       document.getElementById('file-text').setAttribute('value', name);
   };
@@ -263,37 +269,59 @@ function getCustomers(){
   };
 }
 
-function readExcel(){
+function readExcel(customer, product){
   // parse through the chosen excel file
     console.log("read excel");
     var reader = new FileReader();
     var file = document.getElementById('file-input').files[0];
+    reader.readAsText(file);
 
-    reader.addEventListener("load", function () {
+    console.log("before excel listener");
+    reader.onloadend = function (e) {
+      var xmlDoc = e.target.result;
+      var xml = parser.parseFromString(xmlDoc,"text/xml");
       console.log("LOADING");
-      console.log(reader.result);
-    }, false);
-
-    if(file){
-      reader.readAsDataURL(file);
-    }
+      createTickets(xml, customer, product);
+    };
 }
 
 function createTickets(tickets, customer, product){
     console.log("create tickets");
     // loop through the tickets array and update their versions
-    var len = tickets.length();
+    console.log(tickets);
+    var len = tickets.getElementsByTagName("ticket").length;
+    console.log(len);
     for(var t=0; t<len; ++t){
+        var ticket = tickets.getElementsByTagName("ticket")[t];
+        var title = ticket.getElementsByTagName("title")[0].innerHTML;
+        var est = Number(ticket.getElementsByTagName("estimatedDays")[0].innerHTML).toFixed(2);
+        var priority = ticket.getElementsByTagName("priority")[0].innerHTML;
+        var id = ticket.getElementsByTagName("id")[0].innerHTML;
+
+        if(id != null || id != undefined){
+          title = title + " ("+ id + ")";
+        }
+
+        if(priority == '0' || priority == '1'){
+          priority = "High";
+        }else if(priority == '2'){
+          priority = "Medium";
+        }else{
+          priority = "Low";
+        }
+
         var data =
           '<Ticket>' +
             '<TicketStatusID>55067</TicketStatusID>' +
             '<CustomerID>' + customer + '</CustomerID>'+
             '<ProductID>' + product + '</ProductID>'+
-            '<Name>' + tickets[t].name + '</Name>'+
-            '<Estimatedevdays>' + tickets[t].days + '</Estimatedevdays>'+
-            '<DevelopmentPriority>' + tickets[t].priority + '</DevelopmentPriority>'+
+            '<Name>' + title + '</Name>'+
+            '<Estimatedevdays>' + est + '</Estimatedevdays>'+
+            '<Severity>' + priority + '</Severity>'+
           '</Ticket>';
-    var xmlData = parser.parseFromString(data,"text/xml");
+
+        var xmlData = parser.parseFromString(data,"text/xml");
+        console.log(xmlData);
         var putURL = url + "tickets";
         xhr.open("POST", putURL, false, orgID, token);
         xhr.send(xmlData);
